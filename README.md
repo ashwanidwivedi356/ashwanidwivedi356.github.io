@@ -34,7 +34,7 @@ assets/  logo-mark.png, favicon.png, apple-touch-icon.png, og-cover.png
 
 ## What's on the site
 
-- **Hero:** "Websites & apps that grow Indian businesses", WhatsApp + View work CTAs, and a floating laptop + phone mockup group (pure CSS/SVG) over the Three.js scene. Tiers: Three.js (desktop) → 2D canvas (mobile / low-end / no WebGL) → static (reduced motion).
+- **Hero:** "Websites, apps & AI that grow Indian & global businesses", WhatsApp + View work CTAs, and a floating laptop + phone mockup group (pure CSS/SVG) over the Three.js scene. Tiers: Three.js (desktop) → 2D canvas (mobile / low-end / no WebGL) → static (reduced motion).
 - **Services:** 8 cards, each with "Starting at ₹___".
 - **Industries:** 9 tiles (restaurants, clinics, coaching, real estate, D2C, salons/gyms, CA/legal, manufacturers/exporters, startups).
 - **How it works:** Free call → Design preview → Build & review → Launch + support. Free consultation / free mockup banner.
@@ -61,22 +61,23 @@ assets/  logo-mark.png, favicon.png, apple-touch-icon.png, og-cover.png
 
 ## Design tokens (`:root` in `css/style.css`)
 
-| Token | Value | Used for |
-|-------|-------|----------|
-| `--bg` / `--bg-2` / `--bg-3` | `#04060d` / `#080d1b` / `#0c1428` | Page, alternate section, raised surfaces |
-| `--surface` | `rgba(14,22,42,.62)` | Glass cards |
-| `--line` / `--line-strong` | `rgba(124,164,255,.14 / .32)` | Borders, dividers |
-| `--blue` / `--blue-soft` | `#2f7bff` / `#6aa4ff` | Primary buttons, links |
-| `--cyan` | `#22d3ee` | Eyebrows, icons, focus ring |
-| `--violet` | `#8b6cf6` | Subtle highlights |
-| **`--saffron`** | **`#ff9933`** | **Prices, hero accent, offer, active nav underline** |
-| **`--amber`** | **`#ffb84d`** | **Hindi accent lines, gradient end, placeholders** |
-| `--saffron-grad` | `#ff9933 → #ffb84d` | Hero accent text, saffron buttons, "most chosen" badge |
-| `--saffron-line` | `rgba(255,153,51,.38)` | Saffron borders (offer banner, placeholder slots) |
-| `--text` / `--muted` / `--faint` | `#eef3ff` / `#a3b0cf` / `#7d8bad` | Headings / body / captions |
-| `--wa` | `#25d366` | WhatsApp floating button and mobile bar only |
+Palette v5 "Navy · Signal cyan · Saffron". Change colours **only** here; CSS tints use the `--rgb-*` channels
+(`rgba(var(--rgb-blue), .2)`) and `js/effects.js` reads the same channels for the canvases and the 3D hero.
 
-Fonts: **Space Grotesk** (headings, prices) and **Inter** (body), both with `font-display: swap`. Radius 6px (buttons, inputs) and 10px (cards). Saffron is used sparingly so the dark blue base stays premium.
+| Token | Value | Contrast | Used for |
+|-------|-------|----------|----------|
+| `--bg` / `--bg-2` / `--bg-3` | `#05070f` / `#0a1020` / `#101a30` | | Page, alternate section, raised surfaces |
+| `--text` / `--muted` / `--faint` | `#eef3ff` / `#a9b5d1` / `#8592b3` | 18.1 / 9.8 / 6.5 : 1 | Headings / body / captions |
+| `--blue-strong` → `--blue-deep` | `#2563eb` → `#1d4ed8` | white text 5.2 : 1 | Primary buttons |
+| `--blue` / `--blue-soft` | `#3b82f6` / `#7aa7ff` | 5.5 / 8.4 : 1 | Accents, links |
+| `--cyan` | `#22d3ee` | 11.1 : 1 | "AI signal": eyebrows, icons, focus ring |
+| `--violet` | `#5b8def` | | Periwinkle (the old purple was retired) |
+| `--saffron` / `--amber` | `#ff9933` / `#ffb84d` | 9.4 / 11.7 : 1 | Prices, main CTA, highlights only |
+| `--line-control` | `#53679a` | 3.6 : 1 | Borders of inputs, toggles, filter and option buttons (WCAG 1.4.11) |
+| `--ok` / `--err` / `--wa` | `#4ade80` / `#ff8fa0` / `#25d366` | | Status, WhatsApp |
+
+Fonts: **Space Grotesk** (headings) + **Inter** (body), now **self-hosted** in `assets/fonts/` (SIL Open Font
+License, latin + latin-ext for ₹) and preloaded, with metric-matched Arial fallbacks. No Google Fonts request.
 
 ## Before you deploy: details only you can supply
 
@@ -109,3 +110,75 @@ Mobile and low-end devices skip Three.js and use the lite 2D canvas. Below-the-f
 
 - The flag in "Made in India 🇮🇳" is an emoji; Windows shows "IN" instead of a flag. Phones, macOS and Linux show the flag.
 - I verified the layout in headless Chrome at desktop and phone widths. A Lighthouse run on your real deployment is still worth doing.
+
+## V5 premium pass (what changed)
+
+- **Palette + contrast:** new tokens above; every hard-coded colour in CSS, inline SVG and `effects.js` mapped to them. Primary button text went from 3.9:1 to 5.2:1; control borders from ~1.8:1 to 3.6:1. Saffron is now reserved for prices, the main CTA and highlights.
+- **Hero:** "Indian & global businesses", AI-first badge, rotating "We build…" list covering all development types, and an affordability line built from `CONFIG` (Websites from ₹X, AI automation from ₹Y; change the numbers in `CONFIG.pricing` / `CONFIG.estimator`).
+- **3D hero (desktop):** "AI network": neurons that fire (shader points) and synapses carrying travelling signal pulses (shader lines), colours from the tokens, additive glow without postprocessing. Three.js now loads when the browser is idle. Phones / low-end keep the 2D canvas (now with firing nodes and pulses); reduced motion keeps the static frame.
+- **Accessibility:** automation tabs and the integration hub are proper ARIA tabs (arrow keys, Home/End, one tab stop); the hub's auto-tour pauses on hover/focus and has a Pause button; quieter live regions (ROI announces once after a slider settles, the flow log announces only runs you start); `color-scheme: dark`; no more `transition: all`; focus isn't hidden behind the mobile bar; Work page heading order fixed.
+- **Motion:** the automation demo is the one orchestrated moment (node ping, data packets crossing connectors, typed log with caret); estimator result gives a 180 ms change cue. CSS / WAAPI only, no GSAP (it would add ~70 KB for no visible gain). Decorative loops pause when their section is off-screen.
+- **Responsive:** no horizontal overflow at 360–1440 px (the `g-5` gutters overhung phone screens); SLA table has sticky row labels and a swipe hint on phones; hub labels fit on small phones; estimator options use a 2-column grid on phones; fixed estimator text sizes that `.card-nx p` was overriding.
+- **Edge cases:** ROI no longer shows ₹0 for tiny values; very long contact messages are shortened in the email link (links over ~2,000 characters fail silently in some email apps); name and message have `maxlength`.
+- **Performance:** CLS measured at 0.00 on every page (was up to 0.22, caused by font swap re-wrapping headings); hero price line is in the HTML so it doesn't shift the page.
+- **Photography:** 51 CC0 photos from StockSnap (via Openverse) plus 9 small marquee chips, graded to the navy palette, WebP, under 1 MB in total (each page loads only its own; below-the-fold ones are lazy-loaded). Home: dark city photo behind the hero, photo chips in the industries marquee, photo in the free-consultation banner, thumbnails in "Every screen", a photo layer under each of the 8 service scenes, photos on the capability cards, industry tiles and section heads. Every other page: page-hero photo, section photos and a background photo in the closing call-to-action. Larger photos carry a "Stock photo (CC0)" caption; none show your team, office or clients.
+
+| File (`assets/images/photos/`) | Source (CC0) |
+|---|---|
+| `ind-restaurant.webp` | [Restaurant Kitchen](https://stocksnap.io/photo/restaurant-kitchen-0HCMIT272C) |
+| `ind-clinic.webp` | [Doctor Mask](https://stocksnap.io/photo/doctor-mask-GWE6UQDBTN) |
+| `ind-coaching.webp` | [Student School](https://stocksnap.io/photo/student-school-1KOT8HDPAX) |
+| `ind-realestate.webp` | [Woodpaneling House](https://stocksnap.io/photo/woodpaneling-house-582053B25E) |
+| `ind-d2c.webp` | [Ecommerce Shopping](https://stocksnap.io/photo/ecommerce-shopping-RZWM4T2UAD) |
+| `ind-fitness.webp` | [Weights Dumbbells](https://stocksnap.io/photo/weights-dumbbells-QP7WI19WFG) |
+| `ind-legal.webp` | [Business Document](https://stocksnap.io/photo/business-document-AB4F938C85) |
+| `ind-manufacturing.webp` | [Factory Automotive](https://stocksnap.io/photo/factory-automotive-2PJ81W5Q7X) |
+| `ind-startup.webp` | [Macbook Laptop](https://stocksnap.io/photo/macbook-laptop-LEJ7HJ5BEA) |
+| `about-workspace.webp` | [Code Coding](https://stocksnap.io/photo/code-coding-FSPLFPQBCZ) |
+| `enterprise-planning.webp` | [Team Meeting](https://stocksnap.io/photo/team-meeting-VQXYE2ZEHC) |
+| `ai-network.webp` | [Technology Network](https://stocksnap.io/photo/technology-network-PN7RVGLUUD) |
+| `integrations-devices.webp` | [Phone Hand](https://stocksnap.io/photo/phone-hand-OMHRCBTI8N) |
+| `services-workspace.webp` | [Laptop Desk](https://stocksnap.io/photo/laptop-desk-JCXQS3IVWD) |
+| `work-wireframes.webp` | [Office Work](https://stocksnap.io/photo/office-work-42H3JH8QI5) |
+| `pricing-calculator.webp` | [Calculator Numbers](https://stocksnap.io/photo/calculator-numbers-VVXW9WBTB8) |
+| `contact-phone.webp` | [Mobile Smartphone](https://stocksnap.io/photo/mobile-smartphone-DLITZEAVJJ) |
+| `cap-ai.webp` | [Robot Technology](https://stocksnap.io/photo/robot-technology-WUBMLJRYEK) |
+| `cap-integrations.webp` | [Ethernet Cables](https://stocksnap.io/photo/ethernet-cables-B4I4XD7WY4) |
+| `cap-platform.webp` | [Code Technology](https://stocksnap.io/photo/code-technology-9OQTUSUS0M) |
+| `cap-cloud.webp` | [Servers Woman](https://stocksnap.io/photo/servers-woman-ZYGIOUX4QU) |
+| `how-wireframe.webp` | [Design Wireframe](https://stocksnap.io/photo/design-wireframe-20VFXOOUWG) |
+| `about-code.webp` | [Coding Programming](https://stocksnap.io/photo/coding-programming-PBTF1NEBCG) |
+| `about-plan.webp` | [Whiteboard Post-Itnotes](https://stocksnap.io/photo/whiteboard-post-itnotes-YR89OQFMT1) |
+| `ai-messaging.webp` | [Man Browsing](https://stocksnap.io/photo/man-browsing-U039DBUOV1) |
+| `ai-paperwork.webp` | [Filefolders Business](https://stocksnap.io/photo/filefolders-business-6RHKEELJ8F) |
+| `ai-keys.webp` | [Key Lock](https://stocksnap.io/photo/key-lock-SZE0NDYC0F) |
+| `ai-start.webp` | [Lifestyle Office](https://stocksnap.io/photo/lifestyle-office-BHPWRL9YQ7) |
+| `int-dashboard.webp` | [Business Working](https://stocksnap.io/photo/business-working-PHE63L27S6) |
+| `int-hardware.webp` | [Computer Ram](https://stocksnap.io/photo/computer-ram-52KJ8KZGWY) |
+| `int-analytics.webp` | [Macbook Laptop](https://stocksnap.io/photo/macbook-laptop-DUAHA1V312) |
+| `ent-discussion.webp` | [Business People](https://stocksnap.io/photo/business-people-DUXISHKTT3) |
+| `ent-proposal.webp` | [Office Work](https://stocksnap.io/photo/office-work-UP9J4EZYNJ) |
+| `ent-meeting.webp` | [Business Team](https://stocksnap.io/photo/business-team-V8NHXQVQ70) |
+| `ent-security.webp` | [Padlock Gate](https://stocksnap.io/photo/padlock-gate-2CIM1SFTOK) |
+| `ent-planning.webp` | [Woman Business](https://stocksnap.io/photo/woman-business-NJP1LFA6EW) |
+| `hero-city.webp` | [Cityscape Skyline](https://stocksnap.io/photo/cityscape-skyline-KDOIQSH4ZW) |
+| `offer-phone.webp` | [Iphone Smartphone](https://stocksnap.io/photo/iphone-smartphone-ODN23L0AC9) |
+| `sc-web.webp` | [Macbook Computer](https://stocksnap.io/photo/macbook-computer-6UHHE19YG7) |
+| `sc-store.webp` | [Woman Mobile](https://stocksnap.io/photo/woman-mobile-Q93BUD2Z3Z) |
+| `sc-app.webp` | [Apps Smartphone](https://stocksnap.io/photo/apps-smartphone-XLCKX6HJKD) |
+| `sc-dash.webp` | [Seo Ppc](https://stocksnap.io/photo/seo-ppc-9699Y6WKLD) |
+| `svc-web.webp` | [Macbook Laptop](https://stocksnap.io/photo/macbook-laptop-F7OLW2SG0C) |
+| `svc-store.webp` | [People Girl](https://stocksnap.io/photo/people-girl-R33KBON2SV) |
+| `svc-ads.webp` | [Market Graph](https://stocksnap.io/photo/market-graph-5T50IEAQHE) |
+| `svc-apps.webp` | [Macbook Laptop](https://stocksnap.io/photo/macbook-laptop-UNB7V2H5L4) |
+| `svc-mobile.webp` | [Writing Paper](https://stocksnap.io/photo/writing-paper-J6YJ4W3B48) |
+| `svc-seo.webp` | [Travel Map](https://stocksnap.io/photo/travel-map-0JXPKD87MQ) |
+| `svc-whatsapp.webp` | [News Newspaper](https://stocksnap.io/photo/news-newspaper-OJXHDWMWV9) |
+| `svc-maint.webp` | [Macbook Laptop](https://stocksnap.io/photo/macbook-laptop-R66E2T133W) |
+| `cta-handshake.webp` | [Work Business](https://stocksnap.io/photo/work-business-J5LXKNDREC) |
+
+`chip-*.webp` are 48 px crops of the `ind-*.webp` photos.
+
+**Still yours to fill (proof for enterprise bids):** real case studies with outcomes, named team members with experience, client references, and any certifications you actually hold. The site has clearly marked slots for these and makes no invented claims.
+
+**Not verified:** real devices (only headless Chrome with a software GPU), Safari/iOS rendering of the WebGL shaders, and a Lighthouse run on the live domain.

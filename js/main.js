@@ -15,7 +15,8 @@
      ====================================================================== */
   var CONFIG = {
     whatsappNumber: '919200968689',                // digits only with country code, e.g. '919876543210'
-    whatsappMessage: 'Hi, I want a website for my business',                         
+    whatsappMessage: 'Hi, I want a website for my business',
+    phone: '',                                     // e.g. '+91 98765 43210'. Empty = Call buttons stay hidden
     email: 'nextgenaiinfotech01@gmail.com',       // public contact email shown on the site
     // How the contact form delivers: 'mailto' = opens the visitor's email app with the enquiry ready to send (default),
     // 'service' = sends silently through FormSubmit, 'both' = does both.
@@ -33,7 +34,38 @@
       custom:   { from: 149999 }
     },
     // "Starting at ₹___" on service cards. Leave '' to keep the ₹___ placeholder.
-    startingAt: { websites: '', ecommerce: '', landing: '', webapps: '', mobile: '', seo: '', whatsapp: '', maintenance: '' }
+    startingAt: { websites: '', ecommerce: '', landing: '', webapps: '', mobile: '', seo: '', whatsapp: '', maintenance: '' },
+
+    // Project estimator (index.html#estimate, pricing.html). Sample ranges in ₹ and weeks: tune to your real rates.
+    // usdRate converts the range to an approximate USD figure for overseas buyers (0 = hide USD).
+    usdRate: 88,
+    estimator: {
+      types: {
+        website:    { label: 'Business website',          min: 15000,   max: 60000,   wk: [3, 6] },
+        ecommerce:  { label: 'E-commerce store',          min: 40000,   max: 200000,  wk: [5, 10] },
+        webapp:     { label: 'Web app / dashboard',       min: 150000,  max: 800000,  wk: [8, 16] },
+        mobile:     { label: 'Mobile app',                min: 200000,  max: 1000000, wk: [10, 20] },
+        ai:         { label: 'AI agent / automation',     min: 60000,   max: 500000,  wk: [3, 10] },
+        platform:   { label: 'Enterprise platform / SaaS', min: 1200000, max: 6000000, wk: [16, 40] }
+      },
+      features: {
+        crm:      { label: 'CRM integration',         min: 25000, max: 150000, wk: 2 },
+        erp:      { label: 'ERP / Tally / accounting', min: 40000, max: 250000, wk: 3 },
+        payments: { label: 'Payments (UPI, cards)',   min: 15000, max: 60000,  wk: 1 },
+        wa:       { label: 'WhatsApp Business API',   min: 20000, max: 90000,  wk: 1 },
+        bot:      { label: 'AI chatbot / assistant',  min: 40000, max: 300000, wk: 3 },
+        rag:      { label: 'AI on your documents',    min: 80000, max: 400000, wk: 4 },
+        auth:     { label: 'User accounts & roles',   min: 30000, max: 150000, wk: 2 },
+        admin:    { label: 'Admin panel & reports',   min: 40000, max: 200000, wk: 3 },
+        lang:     { label: 'Hindi + English',         min: 10000, max: 60000,  wk: 1 },
+        motion:   { label: '3D / premium animation',  min: 30000, max: 200000, wk: 2 }
+      },
+      scale: {
+        standard:   { label: 'Standard',   mult: 1,   team: '1 project lead, 1–2 developers, 1 designer' },
+        growth:     { label: 'Growth',     mult: 1.6, team: '1 project manager, 3–4 developers, 1 designer, 1 QA' },
+        enterprise: { label: 'Enterprise', mult: 2.6, team: 'Delivery manager, solution architect, 5–8 engineers, designer, QA, DevOps' }
+      }
+    }
   };
 
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -62,7 +94,7 @@
     });
     // Call links
     $$('[data-call]').forEach(function (a) {
-      var digits = CONFIG.phone.replace(/[^\d+]/g, '');
+      var digits = (CONFIG.phone || '').replace(/[^\d+]/g, '');
       if (digits) a.href = 'tel:' + digits;
       else if (!a.hasAttribute('data-cfg')) a.hidden = true;     // no phone yet: hide Call buttons
     });
@@ -91,6 +123,13 @@
       var p = el.getAttribute('data-price').split('.'), v = CONFIG.pricing[p[0]] && CONFIG.pricing[p[0]][p[1]];
       el.textContent = v ? formatINR(v) : '₹__,___';
     });
+    // Hero affordability line: rendered in the HTML (no layout shift) and refreshed from CONFIG so it matches the pricing page
+    var hp = $('[data-hero-price]'), st = CONFIG.pricing.starter && CONFIG.pricing.starter.once, ai = CONFIG.estimator && CONFIG.estimator.types.ai;
+    if (hp && st) {
+      hp.innerHTML = '<span>Fixed, affordable quotes:</span><span class="pchip">Websites from <b>' + formatINR(st) + '</b></span>' +
+        (ai ? '<span class="pchip">AI automation from <b>' + formatINR(ai.min) + '</b></span>' : '');
+      hp.hidden = false;
+    }
     var y = $('#year'); if (y) y.textContent = new Date().getFullYear();
   }
 
@@ -314,10 +353,14 @@
   function openEmailApp(data, status, form) {
     var to = CONFIG.formEmail || CONFIG.email;
     var subject = 'New website enquiry from ' + data.name;
-    var lines = ['Name: ' + data.name, 'Phone / WhatsApp: ' + data.phone, 'Business type: ' + data.businessType, 'Budget: ' + (data.budget || '-'), '', 'Message:', data.message, '', 'Sent from: ' + location.href];
+    // mailto: links over ~2,000 characters fail silently in many email apps (Outlook on Windows), so long messages are shortened here
+    var msg = data.message;
+    while (encodeURIComponent(msg).length > 1000 && msg.length > 40) msg = msg.slice(0, Math.floor(msg.length * 0.85));
+    if (msg !== data.message) msg += '… (message shortened, full text to follow)';
+    var lines = ['Name: ' + data.name, 'Phone / WhatsApp: ' + data.phone, 'Business type: ' + data.businessType, 'Budget: ' + (data.budget || '-'), '', 'Message:', msg, '', 'Sent from: ' + location.href];
     var mailto = 'mailto:' + to + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(lines.join('\r\n'));
     var gmail = 'https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(to) + '&su=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(lines.join('\r\n'));
-    var wa = waLink('Hi, I am ' + data.name + '. Business: ' + data.businessType + (data.budget ? '. Budget: ' + data.budget : '') + '. ' + data.message);
+    var wa = waLink('Hi, I am ' + data.name + '. Business: ' + data.businessType + (data.budget ? '. Budget: ' + data.budget : '') + '. ' + msg);
     status.className = 'form-status show ok';
     status.innerHTML = '<strong>Almost done!</strong> Your email app should open with your enquiry ready. Just press <strong>Send</strong>.<br>If nothing opened, use one of these:<br>' +
       '<span class="status-actions"><a class="btn-nx btn-nx--primary btn-nx--sm" href="' + mailto + '"><i class="bi bi-envelope" aria-hidden="true"></i> Open email app</a> ' +
@@ -448,6 +491,248 @@
     window.addEventListener('resize', update); update();
   }
 
+  /* ---- Money helpers for the estimator / ROI: 1250000 -> "₹12.5 L" ----------- */
+  function fmtLakh(n) {
+    if (n >= 1e7) return '₹' + (+(n / 1e7).toFixed(2)) + ' Cr';
+    if (n >= 1e5) return '₹' + (+(n / 1e5).toFixed(1)) + ' L';
+    if (n >= 1000) return formatINR(Math.round(n / 500) * 500);
+    return formatINR(Math.max(n > 0 ? 10 : 0, Math.round(n / 10) * 10));   // small values: don't round down to ₹0
+  }
+  function fmtUSD(n) {
+    var d = n / CONFIG.usdRate;
+    return '$' + (d >= 1e6 ? (+(d / 1e6).toFixed(2)) + 'M' : d >= 1e3 ? Math.round(d / 1e3) + 'k' : Math.round(d));
+  }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  /* ---- ARIA tabs helpers: roving tabindex + arrow / Home / End keys ------------ */
+  function setTabs(tabs, idx) {
+    tabs.forEach(function (t, k) { t.setAttribute('aria-selected', k === idx ? 'true' : 'false'); t.tabIndex = k === idx ? 0 : -1; });
+  }
+  function tabKeys(tabs, select) {
+    tabs.forEach(function (t, i) {
+      t.addEventListener('keydown', function (e) {
+        var n = tabs.length, j = -1;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') j = (i + 1) % n;
+        else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') j = (i - 1 + n) % n;
+        else if (e.key === 'Home') j = 0; else if (e.key === 'End') j = n - 1;
+        if (j < 0) return;
+        e.preventDefault(); tabs[j].focus(); select(j);
+      });
+    });
+  }
+  var uid = 0;
+
+  /* ---- Automation flow demo: pick a scenario, watch it run step by step -------
+     Illustrative only: the log shows what a real automation does, with sample data. */
+  var FLOWS = {
+    lead: {
+      nodes: [
+        ['bi-whatsapp', 'Lead arrives', 'A WhatsApp message, website form or IndiaMART enquiry.', 'Trigger'],
+        ['bi-cpu', 'AI qualifies', 'Reads the message, detects intent, budget and urgency, and scores the lead.', 'AI agent'],
+        ['bi-diagram-3', 'CRM updated', 'Creates or updates the contact and deal, assigns the right sales owner.', 'Zoho / HubSpot'],
+        ['bi-send-check', 'Instant follow-up', 'Replies in the customer’s language, books a call and sets reminders.', 'Action']
+      ],
+      log: [
+        ['', 'webhook  whatsapp.message  from +91 98•••• 210'],
+        ['', '"Need 3BHK in Pune under 1.2 Cr, can visit this weekend"'],
+        ['ai', 'agent    intent=site_visit  budget=1.2Cr  city=Pune  score=86/100'],
+        ['crm', 'crm      contact upserted · deal "3BHK Pune" → stage Qualified · owner Rahul'],
+        ['ok', 'reply    sent in Hindi + English with 3 visit slots'],
+        ['ok', 'done     total 3.2s · no manual work']
+      ]
+    },
+    support: {
+      nodes: [
+        ['bi-chat-dots', 'Customer asks', '“Where is my order?” on WhatsApp, chat widget or email.', 'Trigger'],
+        ['bi-search', 'AI looks it up', 'Finds the order in your store and the courier status.', 'Shopify / Shiprocket'],
+        ['bi-robot', 'Answers or escalates', 'Replies with the live status. Unsure or upset customer goes to a human.', 'Guardrails'],
+        ['bi-journal-check', 'Ticket logged', 'Conversation and outcome saved to your CRM or helpdesk.', 'Freshdesk / CRM']
+      ],
+      log: [
+        ['', 'webhook  chat.message  "Mera order #4821 kab aayega?"'],
+        ['ai', 'agent    language=hi  intent=order_status  confidence=0.97'],
+        ['', 'tool     shopify.orders.get(4821) → shipped · shiprocket AWB 14xx'],
+        ['ok', 'reply    "Aapka order kal tak deliver hoga" + tracking link'],
+        ['crm', 'crm      ticket #T-2291 created · status Resolved by AI'],
+        ['ok', 'done     total 2.1s · human handoff not needed']
+      ]
+    },
+    invoice: {
+      nodes: [
+        ['bi-envelope-paper', 'Invoice received', 'A vendor emails a PDF or photo of an invoice.', 'Trigger'],
+        ['bi-file-earmark-text', 'AI reads it', 'Extracts GSTIN, invoice number, amounts, tax and line items.', 'Document AI'],
+        ['bi-check2-square', 'Checks & approval', 'Matches against the purchase order. Mismatches go to a person.', 'Human in the loop'],
+        ['bi-journal-arrow-up', 'Booked in accounts', 'Posts the entry to your accounting system and notifies finance.', 'Tally / Zoho Books']
+      ],
+      log: [
+        ['', 'imap     new mail accounts@ · attachment INV-0932.pdf'],
+        ['ai', 'extract  GSTIN 27AAB•••1Z5 · ₹1,18,000 · CGST 9% · SGST 9% · 6 lines'],
+        ['', 'match    PO-5512 found · qty ok · rate ok'],
+        ['ok', 'approve  auto-approved (within ₹2L rule)'],
+        ['crm', 'books    voucher posted · vendor ledger updated'],
+        ['ok', 'done     total 6.4s · finance notified on Slack']
+      ]
+    }
+  };
+
+  function initFlows() {
+    $$('[data-flow]').forEach(function (box) {
+      var board = $('.flow-board', box), log = $('.flow-log', box), run = $('[data-flow-run]', box), say = $('[data-flow-say]', box);
+      var tabs = $$('[data-flow-tab]', box), timers = [], cur = box.getAttribute('data-flow') || 'lead', started = false;
+      board.id = board.id || 'flowBoard' + (++uid);
+      tabs.forEach(function (t) { t.setAttribute('aria-controls', board.id); });
+      function clear() { timers.forEach(clearTimeout); timers = []; }
+      function render(key) {
+        clear(); cur = key; var f = FLOWS[key];
+        setTabs(tabs, tabs.map(function (t) { return t.getAttribute('data-flow-tab'); }).indexOf(key));
+        board.innerHTML = f.nodes.map(function (n) {
+          return '<li class="fnode"><i class="bi ' + n[0] + '" aria-hidden="true"></i><div><b>' + esc(n[1]) + '</b><span>' + esc(n[2]) + '</span><em class="ftag">' + esc(n[3]) + '</em></div></li>';
+        }).join('');
+        log.innerHTML = '<p><span class="t">$</span>Press “Run automation” to see it work.</p>';
+        if (reduceMotion) { $$('.fnode', board).forEach(function (n) { n.classList.add('is-done'); }); }
+      }
+      function play(user) {
+        clear(); var f = FLOWS[cur], nodes = $$('.fnode', board), step = reduceMotion ? 0 : 650, t = 0;
+        nodes.forEach(function (n) { n.classList.remove('is-run', 'is-done'); });
+        log.innerHTML = ''; run.disabled = true;
+        f.log.forEach(function (line, i) {
+          timers.push(setTimeout(function () {
+            var node = Math.min(nodes.length - 1, Math.floor(i * nodes.length / (f.log.length - 1)));
+            nodes.forEach(function (n, k) { n.classList.toggle('is-done', k < node || i === f.log.length - 1); n.classList.toggle('is-run', k === node && i < f.log.length - 1); });
+            var p = document.createElement('p');
+            p.innerHTML = '<span class="t">+' + (t / 1000 + i * 0.4).toFixed(1) + 's</span>' + (line[0] ? '<span class="' + line[0] + '">' + esc(line[1]) + '</span>' : esc(line[1]));
+            log.appendChild(p); log.scrollTop = log.scrollHeight;
+            if (i === f.log.length - 1) { run.disabled = false; if (user === true && say) say.textContent = 'Automation finished. ' + line[1].replace(/\s+/g, ' '); }
+          }, i * step));
+        });
+      }
+      tabs.forEach(function (t) { t.addEventListener('click', function () { render(t.getAttribute('data-flow-tab')); play(true); }); });
+      tabKeys(tabs, function (j) { render(tabs[j].getAttribute('data-flow-tab')); play(true); });
+      run.addEventListener('click', function () { play(true); });
+      render(cur);
+      if ('IntersectionObserver' in window && !reduceMotion) {   // auto-run once when it scrolls into view
+        var io = new IntersectionObserver(function (en) { if (en[0].isIntersecting && !started) { started = true; io.disconnect(); play(); } }, { threshold: 0.4 });
+        io.observe(box);
+      }
+    });
+  }
+
+  /* ---- Project estimator: type + features + scale -> indicative range ---------- */
+  function initEstimator() {
+    var form = $('#estForm'); if (!form) return;
+    var E = CONFIG.estimator, out = $('#estOut');
+    function build(name, group, type) {
+      var box = $('[data-opts="' + name + '"]', form); if (!box) return;
+      box.innerHTML = Object.keys(group).map(function (k, i) {
+        var chk = type === 'radio' && i === 0 ? ' checked' : '';
+        return '<label class="opt"><input type="' + type + '" name="' + name + '" value="' + k + '"' + chk + '><span>' + esc(group[k].label) + '</span></label>';
+      }).join('');
+    }
+    build('type', E.types, 'radio'); build('feat', E.features, 'checkbox'); build('scale', E.scale, 'radio');
+    function calc() {
+      var t = E.types[(form.querySelector('[name=type]:checked') || {}).value] || E.types.website;
+      var s = E.scale[(form.querySelector('[name=scale]:checked') || {}).value] || E.scale.standard;
+      var min = t.min, max = t.max, wk = t.wk[1], names = [];
+      $$('[name=feat]:checked', form).forEach(function (c) { var f = E.features[c.value]; min += f.min; max += f.max; wk += f.wk * 0.6; names.push(f.label); });
+      min *= s.mult; max *= s.mult;
+      var wkMin = Math.max(2, Math.round(t.wk[0] * (s.mult > 1 ? 1.2 : 1))), wkMax = Math.round(wk * (s.mult > 1 ? 1.3 : 1));
+      var rg = $('[data-est="range"]', out), txt = fmtLakh(min) + ' – ' + fmtLakh(max);
+      if (rg.textContent !== txt && rg.textContent !== '—' && !reduceMotion && rg.animate)   // quiet feedback that the number changed
+        rg.animate([{ opacity: 0.35, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }], { duration: 180, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+      rg.textContent = txt;
+      var usd = $('[data-est="usd"]', out);
+      if (usd) { usd.hidden = !CONFIG.usdRate; if (CONFIG.usdRate) usd.textContent = '≈ ' + fmtUSD(min) + ' – ' + fmtUSD(max) + ' USD'; }
+      $('[data-est="weeks"]', out).textContent = wkMin + '–' + Math.max(wkMin + 1, wkMax) + ' weeks';
+      $('[data-est="phases"]', out).textContent = max > 2000000 ? '5–6 milestones' : max > 400000 ? '4 milestones' : '3 milestones';
+      $('[data-est="team"]', out).textContent = s.team;
+      var summary = t.label + ' (' + s.label + ')' + (names.length ? ' + ' + names.join(', ') : '') + '. Estimate: ' + fmtLakh(min) + ' – ' + fmtLakh(max) + '.';
+      var cta = $('[data-est="cta"]', out); if (cta) cta.href = 'contact.html?service=' + encodeURIComponent(summary) + '#inquiryForm';
+      var wa = $('[data-est="wa"]', out); if (wa && CONFIG.whatsappNumber) { wa.href = waLink('Hi, I used your estimator: ' + summary + ' Can we discuss?'); wa.target = '_blank'; wa.rel = 'noopener'; }
+    }
+    form.addEventListener('change', calc); calc();
+  }
+
+  /* ---- ROI calculator: tasks × minutes × automatable share × hourly cost ------- */
+  function initRoi() {
+    var box = $('#roi'); if (!box) return;
+    var inputs = $$('input[type=range]', box);
+    function val(n) { return +$('[name=' + n + ']', box).value; }
+    function calc() {
+      inputs.forEach(function (i) {
+        var o = $('output[for=' + i.id + ']', box); if (!o) return;
+        o.textContent = i.name === 'cost' ? formatINR(+i.value) + '/hr' : i.name === 'share' ? i.value + '%' : i.name === 'mins' ? i.value + ' min' : Number(i.value).toLocaleString('en-IN');
+      });
+      var hours = val('tasks') * val('mins') / 60 * val('share') / 100;
+      $('[data-roi="year"]', box).textContent = fmtLakh(hours * val('cost') * 12);
+      $('[data-roi="hours"]', box).textContent = (hours < 10 ? (+hours.toFixed(1)) : Math.round(hours)).toLocaleString('en-IN') + ' hrs';
+      $('[data-roi="fte"]', box).textContent = (hours / 160).toFixed(1);
+      $('[data-roi="days"]', box).textContent = Math.round(hours / 8).toLocaleString('en-IN');
+    }
+    var say = $('[data-roi="say"]', box), t = 0;
+    function announce() {                       // one quiet summary after the slider settles, not on every tick
+      clearTimeout(t);
+      t = setTimeout(function () { if (say) say.textContent = 'Estimated saving ' + $('[data-roi="year"]', box).textContent + ' per year, ' + $('[data-roi="hours"]', box).textContent + ' a month.'; }, 800);
+    }
+    inputs.forEach(function (i) { i.addEventListener('input', calc); i.addEventListener('change', announce); }); calc();
+  }
+
+  /* ---- Integration hub: systems around a core; pick one to see what we sync ---- */
+  var HUB = [
+    ['zoho', 'bi-person-lines-fill', 'Zoho CRM', 'CRM', 'The CRM most Indian SMEs already use. We connect your website, WhatsApp and ads to it so no lead is typed in by hand.', ['Leads from forms, WhatsApp and IndiaMART', 'Deal stages and owner assignment', 'Zoho Books and Desk sync', 'Custom modules and Deluge functions']],
+    ['hubspot', 'bi-hdd-network', 'HubSpot', 'CRM', 'For marketing-led teams. Contacts, deals and lifecycle stages stay in step with your site and product.', ['Forms and live chat to contacts', 'Lifecycle and lead scoring', 'Email sequences triggered by product events', 'Two-way sync with your database']],
+    ['salesforce', 'bi-cloud', 'Salesforce', 'CRM', 'For larger sales teams. We build integrations through the official APIs with proper error handling and audit trails.', ['Leads, accounts and opportunities', 'Custom objects and flows', 'Bulk data migration', 'Middleware with retries and logs']],
+    ['leadsquared', 'bi-funnel', 'LeadSquared', 'CRM', 'Popular with education, real estate and BFSI teams in India. We plug in every lead source and automate follow-ups.', ['Lead capture from all channels', 'Activity and opportunity sync', 'Telephony and WhatsApp logging', 'Counsellor / agent routing']],
+    ['erp', 'bi-boxes', 'Odoo / ERPNext', 'ERP', 'Inventory, purchase and manufacturing data connected to your store, app and dashboards.', ['Stock and price sync to your store', 'Sales orders from website or app', 'Purchase and GRN workflows', 'Custom reports and dashboards']],
+    ['tally', 'bi-calculator', 'Tally / Zoho Books', 'Accounting', 'Invoices, receipts and ledgers posted automatically, with GST details intact.', ['Sales and purchase vouchers', 'GST-ready invoice data', 'Payment reconciliation', 'AI invoice reading into books']],
+    ['razorpay', 'bi-credit-card', 'Razorpay / UPI', 'Payments', 'Checkout, payment links, subscriptions and refunds wired into your CRM and accounts.', ['UPI, cards, net banking, EMI', 'Payment links on WhatsApp', 'Webhooks to CRM and accounting', 'Subscriptions and auto-debit']],
+    ['whatsapp', 'bi-whatsapp', 'WhatsApp Cloud API', 'Messaging', 'Official WhatsApp Business Platform: templates, chatbots, broadcasts and AI agents that reply in Hindi or English.', ['Approved message templates', 'AI agent with human handoff', 'Order, booking and payment updates', 'Shared team inbox']],
+    ['shopify', 'bi-bag', 'Shopify / WooCommerce', 'Commerce', 'Orders, customers and inventory flowing to your CRM, courier and accounts.', ['Order and customer sync', 'Abandoned cart recovery on WhatsApp', 'Inventory from ERP', 'Shiprocket / Delhivery tracking']],
+    ['google', 'bi-google', 'Google Workspace', 'Productivity', 'Sheets, Calendar, Gmail and Drive as part of your workflow, not a copy-paste step.', ['Bookings into Calendar', 'Reports into Sheets', 'Email parsing from Gmail', 'Docs and Drive for AI search']],
+    ['ai', 'bi-stars', 'LLMs (Claude, GPT, Gemini)', 'AI', 'We pick the model that fits the job and budget, and keep your data out of model training.', ['Chat and voice agents', 'Search over your documents (RAG)', 'Data extraction and classification', 'Evaluation and guardrails']],
+    ['api', 'bi-plug', 'Your custom API', 'Anything else', 'Legacy software, government portals, bank APIs or an internal database. If it has an API or an export, we can connect it.', ['REST, GraphQL, SOAP, webhooks', 'CSV / SFTP batch jobs', 'Queue-based sync with retries', 'Monitoring and alerts']]
+  ];
+  function initHub() {
+    var hub = $('#hub'); if (!hub) return;
+    var detail = $('#hubDetail'), svg = $('.hub-lines', hub), n = HUB.length, html = '', lines = '';
+    HUB.forEach(function (h, i) {
+      var a = (i / n) * Math.PI * 2 - Math.PI / 2, x = 50 + Math.cos(a) * 41, y = 50 + Math.sin(a) * 41;
+      html += '<button type="button" role="tab" id="hubTab' + i + '" class="hub-node" style="left:' + x.toFixed(2) + '%;top:' + y.toFixed(2) + '%" data-hub="' + i + '" aria-selected="false" aria-controls="hubDetail" tabindex="-1"><i class="bi ' + h[1] + '" aria-hidden="true"></i><span>' + esc(h[2].split(' (')[0].split(' / ')[0]) + '</span></button>';
+      lines += '<line x1="50" y1="50" x2="' + x.toFixed(2) + '" y2="' + y.toFixed(2) + '"/>';
+    });
+    svg.innerHTML = lines;
+    hub.insertAdjacentHTML('beforeend', '<div class="hub-nodes" role="tablist" aria-label="Systems we integrate">' + html + '</div>');
+    detail.setAttribute('role', 'tabpanel'); detail.tabIndex = 0;
+    var btns = $$('.hub-node', hub), ls = $$('line', svg), auto = 0, stopped = false, hold = false, k = 0, tourBtn = null;
+    function pick(i) {
+      var h = HUB[i]; k = i;
+      setTabs(btns, i);
+      ls.forEach(function (l, j) { l.classList.toggle('on', j === i); });
+      detail.setAttribute('aria-labelledby', 'hubTab' + i);
+      detail.innerHTML = '<span class="cat">' + esc(h[3]) + '</span><h3>' + esc(h[2]) + '</h3><p>' + esc(h[4]) + '</p><ul class="check-list">' +
+        h[5].map(function (x) { return '<li><i class="bi bi-check2-circle" aria-hidden="true"></i>' + esc(x) + '</li>'; }).join('') + '</ul>';
+    }
+    function stop() { stopped = true; clearInterval(auto); if (tourBtn) tourBtn.hidden = true; }
+    btns.forEach(function (b) { b.addEventListener('click', function () { stop(); pick(+b.getAttribute('data-hub')); }); });
+    tabKeys(btns, function (j) { stop(); pick(j); });
+    pick(0);
+    if (reduceMotion) return;
+    // gentle auto-tour until the visitor interacts; pauses on hover/focus and has a visible Pause control (WCAG 2.2.2)
+    var wrap = document.createElement('div'); hub.parentNode.insertBefore(wrap, hub); wrap.appendChild(hub);
+    wrap.insertAdjacentHTML('beforeend', '<button type="button" class="btn-nx btn-nx--ghost btn-nx--sm hub-tour" aria-pressed="false"><i class="bi bi-pause-fill" aria-hidden="true"></i> Pause tour</button>');
+    tourBtn = $('.hub-tour', wrap);
+    tourBtn.addEventListener('click', function () {
+      var p = tourBtn.getAttribute('aria-pressed') !== 'true'; tourBtn.setAttribute('aria-pressed', p ? 'true' : 'false');
+      tourBtn.innerHTML = p ? '<i class="bi bi-play-fill" aria-hidden="true"></i> Play tour' : '<i class="bi bi-pause-fill" aria-hidden="true"></i> Pause tour';
+    });
+    hub.addEventListener('pointerenter', function () { hold = true; }); hub.addEventListener('pointerleave', function () { hold = false; });
+    hub.addEventListener('focusin', function () { hold = true; }); hub.addEventListener('focusout', function () { hold = false; });
+    auto = setInterval(function () {
+      if (stopped || hold || document.hidden || tourBtn.getAttribute('aria-pressed') === 'true') return;
+      var r = hub.getBoundingClientRect(); if (r.bottom < 0 || r.top > window.innerHeight) return;
+      pick((k + 1) % n);
+    }, 3200);
+  }
+
   /* ---- Effects bootstrap (below-fold canvases start only when near viewport) -- */
   function initEffects() {
     var FX = window.NextGenFX; if (!FX) return;
@@ -459,8 +744,18 @@
     });
   }
 
+  /* ---- Pause decorative CSS loops while their section is off-screen --------- */
+  function initOffscreenPause() {
+    if (!('IntersectionObserver' in window) || reduceMotion) return;
+    var io = new IntersectionObserver(function (en) {
+      en.forEach(function (e) { e.target.classList.toggle('is-off', !e.isIntersecting); });
+    }, { rootMargin: '120px' });
+    $$('.hero, .marquee, .offer, .showcase, .bento, .hub, .flow, .cta-section, .footer-mark, .steps').forEach(function (el) { io.observe(el); });
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     applyConfig(); initNav(); initSplitText(); initReveal(); initCards(); initMagnetic(); initCursorGlow();
     initHero(); initFilters(); initFaq(); initPricing(); initForm(); initProgress(); initSteps(); initShowcase(); initCursorRing(); initEffects();
+    initFlows(); initEstimator(); initRoi(); initHub(); initOffscreenPause();
   });
 })();
