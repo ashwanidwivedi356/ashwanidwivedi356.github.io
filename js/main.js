@@ -16,7 +16,7 @@
   var CONFIG = {
     whatsappNumber: '916263717559',                // digits only with country code, e.g. '919876543210'
     whatsappMessage: 'Hi, I want a website for my business',
-    phone: '+91 62637 17559',                         // e.g. '+91 98765 43210' (used for Call buttons)
+                             // e.g. '+91 98765 43210' (used for Call buttons)
     email: 'nextgenaiinfotech01@gmail.com',       // public contact email shown on the site
     // How the contact form delivers: 'mailto' = opens the visitor's email app with the enquiry ready to send (default),
     // 'service' = sends silently through FormSubmit, 'both' = does both.
