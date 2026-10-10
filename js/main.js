@@ -14,7 +14,7 @@
      (WhatsApp buttons fall back to the contact page).
      ====================================================================== */
   var CONFIG = {
-    whatsappNumber: '916263717559',                // digits only with country code, e.g. '919876543210'
+    whatsappNumber: '919200968689',                // digits only with country code, e.g. '919876543210'
     whatsappMessage: 'Hi, I want a website for my business',
                              // e.g. '+91 98765 43210' (used for Call buttons)
     email: 'nextgenaiinfotech01@gmail.com',       // public contact email shown on the site
